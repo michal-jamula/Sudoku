@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Sudoku {
-
-
-    private Integer[][] board = new Integer[][] {
+//Support class to help with the creation and validation of a board
+public class SudokuLogic {
+    private Integer[][] board = new Integer[][] {};
+    private final Integer[][] solvedBoard = new Integer[][] {
             {0,0,0, 0,0,0, 0,0,0},
             {0,0,0, 0,0,0, 0,0,0},
             {0,0,0, 0,0,0, 0,0,0},
@@ -21,53 +21,58 @@ public class Sudoku {
             {0,0,0, 0,0,0, 0,0,0},
     };
 
+    public Integer[][] getBoard() {
+        return board;
+    }
 
-
-    public Sudoku() {
+    public SudokuLogic(int percentage) {
         this.fillSquareWithRandom(0,0);
         this.fillSquareWithRandom(3,3);
         this.fillSquareWithRandom(6,6);
         if (fillNumbers()) {
             System.out.println("Sudoku is valid");
+            System.out.println("Printing answer: ");
+            this.printBoardToConsole(solvedBoard);
+            randomlyHideNumbers(percentage);
+
         } else {
             System.out.println("Sudoku is invalid");
+            System.err.println("Sudoku creation failed. Exit program");
+            System.exit(0);
         }
     }
 
-    //Fills a 3x3 square with random numbers, makes sure they dont repeat within the squares but doesnt check the columns or rows
-    private void fillSquareWithRandom(int x, int y) {
+    //Fills a 3x3 square with random numbers, makes sure they don't repeat within the squares but doesn't check the columns or rows
+    private void fillSquareWithRandom(int row, int col) {
         Random rand = new Random();
         List<Integer> availableNumbers = new ArrayList<>(List.of(1,2,3,4,5,6,7,8,9));
-
-
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 Integer randNumber = availableNumbers.get(rand.nextInt(availableNumbers.size()));
-                board[x+i][y+j] = randNumber;
+                solvedBoard[row+i][col+j] = randNumber;
                 availableNumbers.remove(randNumber);
             }
         }
 
     }
 
-    //Recursive method to fill the rest of the board
+    //Recursive method to fill the board
     private boolean fillNumbers() {
         //Loop over both arrays
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
-
                 //Generate number if field is 0
-                if (board[row][col] == 0) {
+                if (solvedBoard[row][col] == 0) {
                     for (int num = 1; num <= 9; num++) {
                         if (isNumberValidInAll(row, col, num)){
-                            board[row][col] = num;
+                            solvedBoard[row][col] = num;
 
                             //true if number is placed successfully, false if otherwise -- this enables backtracking
                             if (fillNumbers()) {
                                 return true;
                             } else {
-                                board[row][col] = 0;
+                                solvedBoard[row][col] = 0;
                             }
                         }
                     }
@@ -79,40 +84,40 @@ public class Sudoku {
         return true;
     }
 
-    //Makes sure the number doesnt repeat itself in the square, row and column
-    private boolean isNumberValidInAll(int x,int y,int num) {
-        return (numberOccurringInRow(x, num) == 0) &&
-                (numberOccurringInCol(y, num) == 0) &&
-                (numberOccurringInSquare(x,y,num) == 0);
+
+    private boolean isNumberValidInAll(int row,int col,int num) {
+        return (numberOccurringInRow(row, num) == 0) &&
+                (numberOccurringInCol(col, num) == 0) &&
+                (numberOccurringInSquare(row,col,num) == 0);
     }
 
-    //returns how many times the number occurs in the row
-    private int numberOccurringInRow(int x, int num) {
+    //returns how many times the number occurs in a given row
+    private int numberOccurringInRow(int row, int num) {
         int count = 0;
         for (int j = 0; j<9; j++)
-            if (board[x][j] == num)
+            if (solvedBoard[row][j] == num)
                 count++;
         return count;
     }
 
-    //returns how many times the number occurs in the column
-    private int numberOccurringInCol(int y, int num) {
+    //returns how many times the number occurs in a given column
+    private int numberOccurringInCol(int col, int num) {
         int count = 0;
         for (int i = 0; i<9; i++)
-            if (board[i][y] == num)
+            if (solvedBoard[i][col] == num)
                 count ++;
         return count;
     }
 
-    //returns how many times the number occurs in the 3x3 square
-    private int numberOccurringInSquare(int x, int y, int num) {
-        int rowStart = x - x % 3;
-        int colStart = y - y % 3;
+    //returns how many times the number occurs in a given 3x3 square
+    private int numberOccurringInSquare(int row, int col, int num) {
+        int rowStart = row - row % 3;
+        int colStart = col - col % 3;
         int count = 0;
 
         for(int i = rowStart; i < rowStart + 3; i++) {
             for(int j = colStart; j < colStart + 3; j++) {
-                if (board[i][j] == num) {
+                if (solvedBoard[i][j] == num) {
                     count ++;
                 }
             }
@@ -120,7 +125,7 @@ public class Sudoku {
         return count;
     }
 
-    public void printboard() {
+    public void printBoardToConsole(Integer[][] board) {
         for (int i = 0; i < 9; i++) {
             if ( i % 3 == 0 && i != 0) {
                 System.out.println("- - - - - - - - - - -");
@@ -135,21 +140,19 @@ public class Sudoku {
         }
     }
 
-    //Makes sure each number doesn't repeat itself in row, column and square
-    public boolean checkBoardIsSafe() {
+    private void randomlyHideNumbers(int percentage) {
+        Random rand = new Random();
+
+        // Create a copy of the solved board
+        this.board = new Integer[9][9];
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                boolean safe = (numberOccurringInSquare(i,j,board[i][j]) == 1) &&
-                        (numberOccurringInCol(j, board[i][j]) == 1) &&
-                        (numberOccurringInRow(i, board[i][j]) == 1);
-
-                if (safe == false) {
-                    System.out.printf("Number is unsafe at index: %s,%s\n",i, j);
+                if (rand.nextDouble(0, 100) < percentage){
+                    this.board[i][j] = solvedBoard[i][j];
+                } else {
+                    this.board[i][j] = 0;
                 }
-                return safe;
             }
         }
-        return true;
     }
-
 }
